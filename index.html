@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>SCU 秘書室</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -251,6 +252,31 @@
             color: #555;
             margin-top: 4px;
             align-self: flex-end;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .item {
+            flex: 1 1 300px;
+            /* 自動縮放，最小寬度 300px */
+            margin: 10px;
+        }
+
+        /* 響應式調整 */
+        @media (max-width: 600px) {
+            body {
+                font-size: 14px;
+            }
+
+            .input-area input,
+            .input-area button {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
         }
     </style>
 </head>
