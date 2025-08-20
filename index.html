@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SCU 秘書室</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            font-family: "Segoe UI", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+
+        h1 {
+            color: #1d4ed8;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        #questionContainer {
+            display: flex;
+            gap: 5px;
+            width: 70%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+
+        #question {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #2563eb;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            resize: none;
+            overflow: hidden;
+        }
+
+        #question:focus {
+            border-color: #1d4ed8;
+            box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+        }
+
+        #chatHistory {
+            width: 80%;
+            max-width: 600px;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            max-height: 400px;
+            padding: 10px;
+            background: #f0f4ff;
+            border-radius: 10px;
+        }
+
+        /* 分機 Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #007BFF;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* 客服小圓形按鈕 */
+        #chatBtnSmall {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            border: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 客服視窗 */
+        .chat-modal {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 400px;
+            flex-direction: column;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #2563eb;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background: #f0f4ff;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            word-wrap: break-word;
+        }
+
+        .chat-input,
+        .chat-admin {
+            display: flex;
+            padding: 5px;
+            gap: 5px;
+        }
+
+        .chat-input textarea,
+        .chat-admin input {
+            flex: 1;
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            resize: none;
+            overflow: hidden;
+        }
+
+        .chat-input button,
+        .chat-admin button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            padding: 10px;
+            border-radius: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background-color: #e0e7ff;
+            color: #1d4ed8;
+        }
+
+        .message .reply {
+            font-size: 0.85em;
+            color: #555;
+            margin-bottom: 5px;
+            border-left: 2px solid #ccc;
+            padding-left: 5px;
+        }
+
+        .message .time {
+            font-size: 0.75em;
+            color: #555;
+            margin-top: 4px;
+            align-self: flex-end;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>
+        <i class="fas fa-robot"></i> SCU 秘書室 AI 搜尋系統
+        <button class="call-btn" onclick="openModal()">📞 聯絡我們</button>
+        <button class="call-btn" onclick="window.location.href='tel:0905604695'">🔧 網站維修</button>
+        <button class="chat-btn">💬 線上客服</button>
+    </h1>
+
+    <!-- AI 問答區 -->
+    <div id="questionContainer">
+        <textarea id="question" placeholder="輸入你的問題..." rows="1"></textarea>
+        <button onclick="askAI()"><i class="fas fa-paper-plane"></i> 送出</button>
+    </div>
+    <div id="chatHistory"></div>
+
+    <!-- 分機 Modal -->
+    <div id="extModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3>雙溪校區秘書室分機列表</h3>
+            <table>
+                <tr>
+                    <th>姓名</th>
+                    <th>分機</th>
+                    <th>職務 / 業務</th>
+                </tr>
+                <tr>
+                    <td>賈凱傑</td>
+                    <td><a href="tel:0228819471,5021">5021</a></td>
+                    <td>主任秘書</td>
+                </tr>
+                <tr>
+                    <td>黃淑暖</td>
+                    <td><a href="tel:0228819471,5013">5013</a></td>
+                    <td>媒體聯絡人</td>
+                </tr>
+                <tr>
+                    <td>黃綉閔</td>
+                    <td><a href="tel:0228819471,5025">5025</a></td>
+                    <td>媒體聯絡人</td>
+                </tr>
+                <tr>
+                    <td>楊康皓</td>
+                    <td><a href="tel:0228819471,5019">5019</a></td>
+                    <td>校務會議、內部控制業務聯絡人、支援收發業務</td>
+                </tr>
+                <tr>
+                    <td>張巧樺</td>
+                    <td><a href="tel:0228819471,5020">5020</a></td>
+                    <td>學生申訴評議委員會事務、校史業務、支援收發業務</td>
+                </tr>
+                <tr>
+                    <td>任偉榕</td>
+                    <td><a href="tel:0228819471,5023">5023</a></td>
+                    <td>性別平等教育委員會業務</td>
+                </tr>
+                <tr>
+                    <td>葉美君</td>
+                    <td><a href="tel:0228819471,5024">5024</a></td>
+                    <td>行政會議業務聯絡人</td>
+                </tr>
+                <tr>
+                    <td>倪佩君</td>
+                    <td><a href="tel:0228819471,5026">5026</a></td>
+                    <td>秘書室單位登記桌、校務及財務資訊公開業務聯絡人</td>
+                </tr>
+                <tr>
+                    <td>曾敏玲</td>
+                    <td><a href="tel:0228819471,5027">5027</a></td>
+                    <td>校史業務、支援收發業務</td>
+                </tr>
+                <tr>
+                    <td>溫秀芬</td>
+                    <td><a href="tel:0228819471,5028">5028</a></td>
+                    <td>公文收發文及印信、檔案管理</td>
+                </tr>
+                <tr>
+                    <td>黃淑珍</td>
+                    <td><a href="tel:0228819471,5037">5037</a></td>
+                    <td>教師申訴評議委員會事務、授權代判決行暨分層負責作業、支援收發業務</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- 線上客服按鈕 -->
+    <button id="chatBtnSmall">💬</button>
+
+    <!-- 線上客服浮動視窗 -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header">
+            <span>💬 線上客服</span>
+            <span class="close-btn" onclick="minimizeChat()">&times;</span>
+        </div>
+        <div id="chatBox" class="chat-box"></div>
+
+        <div class="chat-input">
+            <textarea id="chatInput" placeholder="使用者訊息..." rows="1"></textarea>
+            <button onclick="sendUserMsg()">送出</button>
+        </div>
+
+        <div class="chat-admin">
+            <input id="adminReply" type="text" placeholder="客服回覆訊息...">
+            <button onclick="sendAdminMsg()">回覆</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBtnSmall = document.getElementById('chatBtnSmall');
+        const chatModal = document.getElementById('chatModal');
+        const chatBox = document.getElementById('chatBox');
+        const chatInput = document.getElementById('chatInput');
+        const adminReplyInput = document.getElementById('adminReply');
+        const questionInput = document.getElementById('question');
+        const sendBtn = document.querySelector('#questionContainer button');
+
+        // 客服按鈕
+        document.querySelector('.chat-btn').addEventListener('click', openChat);
+        chatBtnSmall.addEventListener('click', openChat);
+        function openChat() { chatModal.style.display = 'flex'; chatBtnSmall.style.display = 'none'; }
+        function minimizeChat() { chatModal.style.display = 'none'; chatBtnSmall.style.display = 'flex'; }
+
+        // 聯絡我們 Modal
+        function openModal() { document.getElementById('extModal').style.display = 'block'; }
+        function closeModal() { document.getElementById('extModal').style.display = 'none'; }
+
+        // 分機功能
+        function callExt(ext) {
+            // 填入 AI 問答框
+            questionInput.value = `請撥打分機 ${ext}`;
+            questionInput.focus();
+        }
+
+        // 客服訊息
+        function sendUserMsg() {
+            const msg = chatInput.value.trim();
+            if (!msg) return;
+            const replyText = chatInput.dataset.reply || '';
+            const div = document.createElement('div');
+            div.classList.add('message', 'user');
+            div.innerHTML = `${replyText ? `<div class="reply">${replyText}</div>` : ''}<span class="text">${msg}</span><span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+            chatBox.appendChild(div);
+            chatInput.value = ''; chatInput.dataset.reply = ''; chatInput.style.height = 'auto';
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        function sendAdminMsg() {
+            const msg = adminReplyInput.value.trim();
+            if (!msg) return;
+            const div = document.createElement('div');
+            div.classList.add('message', 'ai');
+            div.innerHTML = `<span class="text">${msg}</span><span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+            chatBox.appendChild(div);
+            adminReplyInput.value = ''; chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // textarea 自動增高
+        chatInput.addEventListener('input', () => { chatInput.style.height = 'auto'; chatInput.style.height = chatInput.scrollHeight + 'px'; });
+        chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendUserMsg(); } });
+
+        // 右鍵選單
+        chatBox.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            const targetMsg = e.target.closest('.message');
+            if (!targetMsg) return;
+            const menu = document.createElement('div');
+            menu.style.position = 'absolute'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
+            menu.style.background = '#fff'; menu.style.border = '1px solid #ccc'; menu.style.padding = '5px'; menu.style.zIndex = 10000;
+
+            const replyBtn = document.createElement('div'); replyBtn.textContent = '回覆'; replyBtn.style.cursor = 'pointer';
+            replyBtn.onclick = () => { chatInput.focus(); chatInput.value = ''; chatInput.dataset.reply = targetMsg.querySelector('.text').textContent; document.body.removeChild(menu); };
+
+            const deleteBtn = document.createElement('div'); deleteBtn.textContent = '刪除'; deleteBtn.style.cursor = 'pointer';
+            deleteBtn.onclick = () => { targetMsg.remove(); document.body.removeChild(menu); };
+
+            const recallBtn = document.createElement('div'); recallBtn.textContent = '收回'; recallBtn.style.cursor = 'pointer';
+            recallBtn.onclick = () => { targetMsg.querySelector('.text').textContent = '此訊息已收回'; document.body.removeChild(menu); };
+
+            menu.appendChild(replyBtn); menu.appendChild(deleteBtn); menu.appendChild(recallBtn);
+            document.body.appendChild(menu);
+            document.addEventListener('click', () => { if (document.body.contains(menu)) document.body.removeChild(menu); }, { once: true });
+        });
+
+        // AI 問答區
+        let isTyping = false;
+        questionInput.addEventListener('input', () => { questionInput.style.height = 'auto'; questionInput.style.height = questionInput.scrollHeight + 'px'; });
+        questionInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askAI(); } });
+
+        async function askAI() {
+            if (isTyping) return;
+            const question = questionInput.value.trim();
+            if (!question) return;
+            const chatHistory = document.getElementById('chatHistory');
+
+            // 使用者訊息
+            const userDiv = document.createElement('div'); userDiv.classList.add('message', 'user');
+            userDiv.innerHTML = `<span class="text">${question}</span><span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+            chatHistory.appendChild(userDiv);
+            questionInput.value = '';
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            // AI 回覆容器
+            const aiDiv = document.createElement('div'); aiDiv.classList.add('message', 'ai');
+            const textSpan = document.createElement('span'); textSpan.classList.add('text'); aiDiv.appendChild(textSpan);
+            const timeSpan = document.createElement('span'); timeSpan.classList.add('time');
+            timeSpan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            aiDiv.appendChild(timeSpan);
+            chatHistory.appendChild(aiDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            try {
+                isTyping = true; sendBtn.disabled = true; sendBtn.innerHTML = 'AI 回答中…';
+                const response = await fetch('YOUR_RENDER_URL', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await response.json();
+                const answer = data.answer;
+
+                let index = 0; const speed = 30;
+                const typeWriter = () => {
+                    if (index < answer.length) {
+                        textSpan.textContent += answer.charAt(index++);
+                        aiDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        setTimeout(typeWriter, speed);
+                    } else {
+                        isTyping = false;
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
+                    }
+                }
+                typeWriter();
+            } catch (err) {
+                textSpan.textContent = 'AI 回答失敗，請稍後再試。';
+                console.error(err);
+                isTyping = false; sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
+            }
+        }
+    </script>
+</body>
+
+</html>
