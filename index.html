@@ -216,6 +216,17 @@
             cursor: pointer;
         }
 
+        /* 避免客服框跑版 */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            /* 避免透明被蓋住 */
+            padding: 8px;
+        }
+
         .message {
             display: flex;
             flex-direction: column;
