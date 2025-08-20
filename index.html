@@ -531,13 +531,35 @@
                 isTyping = false; sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
             }
         }
-        window.addEventListener('resize', () => {
-            if (document.activeElement.tagName === 'INPUT' ||
-                document.activeElement.tagName === 'TEXTAREA') {
-                // 當鍵盤彈出時，自動捲到輸入框
-                document.activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+        // 延遲滾動，確保鍵盤彈出後輸入框可見
+        function scrollToInput(el) {
+            setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
+
+        // 監聽所有 input 和 textarea 的 focus
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('focus', (e) => scrollToInput(e.target));
         });
+
+        // 使用 visualViewport 監聽鍵盤彈出/收起（手機更可靠）
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const active = document.activeElement;
+                if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') {
+                    scrollToInput(active);
+                }
+            });
+        }
+
+        // 可選：輸入框失焦後，滾動回頂部避免空白
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('blur', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+
     </script>
 </body>
 
