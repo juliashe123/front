@@ -531,6 +531,13 @@
                 isTyping = false; sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
             }
         }
+        window.addEventListener('resize', () => {
+            if (document.activeElement.tagName === 'INPUT' ||
+                document.activeElement.tagName === 'TEXTAREA') {
+                // 當鍵盤彈出時，自動捲到輸入框
+                document.activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
     </script>
 </body>
 
