@@ -189,15 +189,7 @@
             word-wrap: break-word;
         }
 
-        .chat-input,
-        .chat-admin {
-            display: flex;
-            padding: 5px;
-            gap: 5px;
-        }
-
-        .chat-input textarea,
-        .chat-admin input {
+        .chat-input textarea {
             flex: 1;
             padding: 6px;
             border-radius: 6px;
@@ -206,8 +198,7 @@
             overflow: hidden;
         }
 
-        .chat-input button,
-        .chat-admin button {
+        .chat-input button {
             padding: 6px 12px;
             border: none;
             border-radius: 6px;
@@ -216,17 +207,7 @@
             cursor: pointer;
         }
 
-        /* 避免客服框跑版 */
-        .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            /* 避免透明被蓋住 */
-            padding: 8px;
-        }
-
+        /* 訊息樣式 */
         .message {
             display: flex;
             flex-direction: column;
@@ -250,44 +231,11 @@
             color: #1d4ed8;
         }
 
-        .message .reply {
-            font-size: 0.85em;
-            color: #555;
-            margin-bottom: 5px;
-            border-left: 2px solid #ccc;
-            padding-left: 5px;
-        }
-
         .message .time {
             font-size: 0.75em;
             color: #555;
             margin-top: 4px;
             align-self: flex-end;
-        }
-
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .item {
-            flex: 1 1 300px;
-            /* 自動縮放，最小寬度 300px */
-            margin: 10px;
-        }
-
-        /* 響應式調整 */
-        @media (max-width: 600px) {
-            body {
-                font-size: 14px;
-            }
-
-            .input-area input,
-            .input-area button {
-                font-size: 0.9rem;
-                padding: 8px;
-            }
         }
     </style>
 </head>
@@ -377,133 +325,173 @@
         </div>
     </div>
 
-
-    <!-- 線上客服按鈕 -->
+    <!-- 使用者 WebSocket 聊天框 -->
     <button id="chatBtnSmall">💬</button>
-
-    <!-- 線上客服浮動視窗 -->
     <div id="chatModal" class="chat-modal">
         <div class="chat-header">
             <span>💬 線上客服</span>
             <span class="close-btn" onclick="minimizeChat()">&times;</span>
         </div>
         <div id="chatBox" class="chat-box"></div>
-
         <div class="chat-input">
             <textarea id="chatInput" placeholder="使用者訊息..." rows="1"></textarea>
             <button onclick="sendUserMsg()">送出</button>
         </div>
-
-        <div class="chat-admin">
-            <input id="adminReply" type="text" placeholder="客服回覆訊息...">
-            <button onclick="sendAdminMsg()">回覆</button>
-        </div>
     </div>
 
     <script>
+        // ----------------- DOM -----------------
         const chatBtnSmall = document.getElementById('chatBtnSmall');
         const chatModal = document.getElementById('chatModal');
         const chatBox = document.getElementById('chatBox');
         const chatInput = document.getElementById('chatInput');
-        const adminReplyInput = document.getElementById('adminReply');
         const questionInput = document.getElementById('question');
         const sendBtn = document.querySelector('#questionContainer button');
 
-        // 客服按鈕
+        // ----------------- 客服浮動視窗 -----------------
         document.querySelector('.chat-btn').addEventListener('click', openChat);
         chatBtnSmall.addEventListener('click', openChat);
         function openChat() { chatModal.style.display = 'flex'; chatBtnSmall.style.display = 'none'; }
         function minimizeChat() { chatModal.style.display = 'none'; chatBtnSmall.style.display = 'flex'; }
 
-        // 聯絡我們 Modal
+        // ----------------- 分機 Modal -----------------
         function openModal() { document.getElementById('extModal').style.display = 'block'; }
         function closeModal() { document.getElementById('extModal').style.display = 'none'; }
+        function callExt(ext) { questionInput.value = `請撥打分機 ${ext}`; questionInput.focus(); }
 
-        // 分機功能
-        function callExt(ext) {
-            // 填入 AI 問答框
-            questionInput.value = `請撥打分機 ${ext}`;
-            questionInput.focus();
-        }
+        // ----------------- 使用者 WebSocket -----------------
+        const ws = new WebSocket('ws://localhost:8082');
+        ws.addEventListener('open', () => {
+            ws.send(JSON.stringify({ type: 'register', role: 'user' }));
+            console.log("使用者端已註冊為 user");
+        });
 
-        // 客服訊息
+        ws.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'reply') {
+                const div = document.createElement('div');
+                div.classList.add('message', 'ai');
+                div.innerHTML = `<span class="text">${data.msg}</span>
+                                 <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        });
+
         function sendUserMsg() {
             const msg = chatInput.value.trim();
             if (!msg) return;
-            const replyText = chatInput.dataset.reply || '';
             const div = document.createElement('div');
             div.classList.add('message', 'user');
-            div.innerHTML = `${replyText ? `<div class="reply">${replyText}</div>` : ''}<span class="text">${msg}</span><span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+            div.innerHTML = `<span class="text">${msg}</span>
+                             <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
             chatBox.appendChild(div);
-            chatInput.value = ''; chatInput.dataset.reply = ''; chatInput.style.height = 'auto';
             chatBox.scrollTop = chatBox.scrollHeight;
-        }
-        function sendAdminMsg() {
-            const msg = adminReplyInput.value.trim();
-            if (!msg) return;
-            const div = document.createElement('div');
-            div.classList.add('message', 'ai');
-            div.innerHTML = `<span class="text">${msg}</span><span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
-            chatBox.appendChild(div);
-            adminReplyInput.value = ''; chatBox.scrollTop = chatBox.scrollHeight;
+            ws.send(JSON.stringify({ type: 'msg', msg }));
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
         }
 
-        // textarea 自動增高
+        // ----------------- textarea 自動增高 -----------------
         chatInput.addEventListener('input', () => { chatInput.style.height = 'auto'; chatInput.style.height = chatInput.scrollHeight + 'px'; });
         chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendUserMsg(); } });
+
+        questionInput.addEventListener('input', () => { questionInput.style.height = 'auto'; questionInput.style.height = questionInput.scrollHeight + 'px'; });
+        questionInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askAI(); } });
 
         // 右鍵選單
         chatBox.addEventListener('contextmenu', e => {
             e.preventDefault();
             const targetMsg = e.target.closest('.message');
             if (!targetMsg) return;
+
+            // 移除舊選單
+            const oldMenu = document.querySelector('.custom-context-menu');
+            if (oldMenu) oldMenu.remove();
+
+            // 建立右鍵選單
             const menu = document.createElement('div');
-            menu.style.position = 'absolute'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
-            menu.style.background = '#fff'; menu.style.border = '1px solid #ccc'; menu.style.padding = '5px'; menu.style.zIndex = 10000;
+            menu.className = 'custom-context-menu';
+            menu.style.position = 'absolute';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            menu.style.background = '#fff';
+            menu.style.border = '1px solid #ccc';
+            menu.style.padding = '5px';
+            menu.style.zIndex = 10000;
 
-            const replyBtn = document.createElement('div'); replyBtn.textContent = '回覆'; replyBtn.style.cursor = 'pointer';
-            replyBtn.onclick = () => { chatInput.focus(); chatInput.value = ''; chatInput.dataset.reply = targetMsg.querySelector('.text').textContent; document.body.removeChild(menu); };
+            // ====== 回覆 ======
+            const replyBtn = document.createElement('div');
+            replyBtn.textContent = '回覆';
+            replyBtn.style.cursor = 'pointer';
+            replyBtn.onclick = () => {
+                const replyContainer = document.getElementById('reply-container');
+                const replyText = document.getElementById('reply-text');
+                replyText.textContent = targetMsg.querySelector('.text').textContent;
+                replyContainer.style.display = 'block';
 
-            const deleteBtn = document.createElement('div'); deleteBtn.textContent = '刪除'; deleteBtn.style.cursor = 'pointer';
-            deleteBtn.onclick = () => { targetMsg.remove(); document.body.removeChild(menu); };
+                chatInput.focus();
+                chatInput.value = '';
+                replyTo = targetMsg.querySelector('.text').textContent;
 
-            const recallBtn = document.createElement('div'); recallBtn.textContent = '收回'; recallBtn.style.cursor = 'pointer';
-            recallBtn.onclick = () => { targetMsg.querySelector('.text').textContent = '此訊息已收回'; document.body.removeChild(menu); };
+                menu.remove();
+            };
+
+            // ====== 刪除 ======
+            const deleteBtn = document.createElement('div');
+            deleteBtn.textContent = '刪除';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.onclick = () => {
+                targetMsg.remove();
+                menu.remove();
+            };
+
+            // ====== 收回 ======
+            const recallBtn = document.createElement('div');
+            recallBtn.textContent = '收回';
+            recallBtn.style.cursor = 'pointer';
+            recallBtn.onclick = () => {
+                targetMsg.querySelector('.text').textContent = '此訊息已收回';
+                menu.remove();
+            };
 
             menu.appendChild(replyBtn); menu.appendChild(deleteBtn); menu.appendChild(recallBtn);
             document.body.appendChild(menu);
             document.addEventListener('click', () => { if (document.body.contains(menu)) document.body.removeChild(menu); }, { once: true });
         });
 
-        // AI 問答區
+        // ----------------- AI 問答區 -----------------
         let isTyping = false;
-        questionInput.addEventListener('input', () => { questionInput.style.height = 'auto'; questionInput.style.height = questionInput.scrollHeight + 'px'; });
-        questionInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askAI(); } });
-
-        async function askAI() {
+        async function askAI(question = null, aiDiv = null) {
             if (isTyping) return;
-            const question = questionInput.value.trim();
-            if (!question) return;
             const chatHistory = document.getElementById('chatHistory');
+            if (!question) question = questionInput.value.trim();
+            if (!question) return;
 
-            // 使用者訊息
-            const userDiv = document.createElement('div'); userDiv.classList.add('message', 'user');
-            userDiv.innerHTML = `<span class="text">${question}</span><span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
-            chatHistory.appendChild(userDiv);
+            if (!aiDiv) {
+                const userDiv = document.createElement('div');
+                userDiv.classList.add('message', 'user');
+                userDiv.innerHTML = `<div class="text">${question}</div>
+                                     <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+                chatHistory.appendChild(userDiv);
+
+                aiDiv = document.createElement('div');
+                aiDiv.classList.add('message', 'ai');
+                aiDiv.innerHTML = `<div class="text"></div>
+                                   <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+                chatHistory.appendChild(aiDiv);
+            }
+
+            const textSpan = aiDiv.querySelector('.text');
+            textSpan.textContent = '';
             questionInput.value = '';
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // AI 回覆容器
-            const aiDiv = document.createElement('div'); aiDiv.classList.add('message', 'ai');
-            const textSpan = document.createElement('span'); textSpan.classList.add('text'); aiDiv.appendChild(textSpan);
-            const timeSpan = document.createElement('span'); timeSpan.classList.add('time');
-            timeSpan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            aiDiv.appendChild(timeSpan);
-            chatHistory.appendChild(aiDiv);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-
             try {
-                isTyping = true; sendBtn.disabled = true; sendBtn.innerHTML = 'AI 回答中…';
+                isTyping = true;
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = 'AI 回答中…';
+
                 const response = await fetch('YOUR_RENDER_URL', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -512,7 +500,8 @@
                 const data = await response.json();
                 const answer = data.answer;
 
-                let index = 0; const speed = 30;
+                let index = 0;
+                const speed = 30;
                 const typeWriter = () => {
                     if (index < answer.length) {
                         textSpan.textContent += answer.charAt(index++);
@@ -523,43 +512,16 @@
                         sendBtn.disabled = false;
                         sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
                     }
-                }
+                };
                 typeWriter();
             } catch (err) {
                 textSpan.textContent = 'AI 回答失敗，請稍後再試。';
                 console.error(err);
-                isTyping = false; sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
+                isTyping = false;
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 送出';
             }
         }
-        // 延遲滾動，確保鍵盤彈出後輸入框可見
-        function scrollToInput(el) {
-            setTimeout(() => {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
-        }
-
-        // 監聽所有 input 和 textarea 的 focus
-        document.querySelectorAll('input, textarea').forEach(input => {
-            input.addEventListener('focus', (e) => scrollToInput(e.target));
-        });
-
-        // 使用 visualViewport 監聽鍵盤彈出/收起（手機更可靠）
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                const active = document.activeElement;
-                if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') {
-                    scrollToInput(active);
-                }
-            });
-        }
-
-        // 可選：輸入框失焦後，滾動回頂部避免空白
-        document.querySelectorAll('input, textarea').forEach(input => {
-            input.addEventListener('blur', () => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-        });
-
     </script>
 </body>
 
