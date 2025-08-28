@@ -81,8 +81,12 @@
         const chatBoxAdmin = document.getElementById('chatBoxAdmin');
         const adminReplyInput = document.getElementById('adminReplyInput');
         const sendAdminBtn = document.getElementById('sendAdminBtn');
+        const serverURL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+            ? 'ws://localhost:8082'
+            : 'wss://front-y86x.onrender.com';
 
-        const wsAgent = new WebSocket('ws://localhost:8082');
+        const wsAgent = new WebSocket(serverURL);
+
 
         // 註冊為管理員
         wsAgent.addEventListener('open', () => {

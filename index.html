@@ -360,7 +360,12 @@
         function callExt(ext) { questionInput.value = `請撥打分機 ${ext}`; questionInput.focus(); }
 
         // ----------------- 使用者 WebSocket -----------------
-        const ws = new WebSocket('ws://localhost:8082');
+        const serverURL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+            ? 'ws://localhost:8082'
+            : 'wss://front-y86x.onrender.com';
+
+        const ws = new WebSocket(serverURL);
+
         ws.addEventListener('open', () => {
             ws.send(JSON.stringify({ type: 'register', role: 'user' }));
             console.log("使用者端已註冊為 user");
