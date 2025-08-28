@@ -360,12 +360,8 @@
         function callExt(ext) { questionInput.value = `請撥打分機 ${ext}`; questionInput.focus(); }
 
         // ----------------- 使用者 WebSocket -----------------
-        const serverURL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-            ? 'ws://localhost:8082'
-            : 'wss://front-production-f4a6.up.railway.app';
 
-        const ws = new WebSocket(serverURL);
-
+        const ws = new WebSocket('ws://localhost:8082');
         ws.addEventListener('open', () => {
             ws.send(JSON.stringify({ type: 'register', role: 'user' }));
             console.log("使用者端已註冊為 user");

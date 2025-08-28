@@ -1,9 +1,6 @@
 import { WebSocketServer } from 'ws'
 
-//使用 Render 提供的 port，或本地測試預設 8082
-const port = process.env.PORT || 8082;
-
-const wss = new WebSocketServer({ port })
+const wss = new WebSocketServer({ port: 8082 })
 
 // 存放連線資訊
 const users = new Map();  // key: userID, value: ws
@@ -65,4 +62,4 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log(`WebSocket 伺服器啟動於 ws://localhost:${port}`);
+console.log("WebSocket 伺服器啟動於 ws://localhost:8082");
