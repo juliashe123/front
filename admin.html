@@ -12,10 +12,6 @@
             padding: 20px;
         }
 
-        h1 {
-            color: #1d4ed8;
-        }
-
         #chatBoxAdmin {
             border: 1px solid #ccc;
             background: #fff;
@@ -50,14 +46,12 @@
             word-wrap: break-word;
         }
 
-        /* 使用者訊息靠右 */
         .message.user {
             background: #2563eb;
             color: white;
             align-self: flex-end;
         }
 
-        /* 客服訊息靠左 */
         .message.agent {
             background: #e0e7ff;
             color: #1d4ed8;
@@ -67,11 +61,8 @@
 </head>
 
 <body>
-
     <h1>客服後台</h1>
-
     <div id="chatBoxAdmin"></div>
-
     <div style="margin-top:10px;">
         <input id="adminReplyInput" placeholder="回覆使用者訊息..." />
         <button id="sendAdminBtn">送出</button>
@@ -82,18 +73,16 @@
         const adminReplyInput = document.getElementById('adminReplyInput');
         const sendAdminBtn = document.getElementById('sendAdminBtn');
 
-        const wsAgent = new WebSocket('ws://localhost:8082');
+        const wsAgent = new WebSocket('wss://websocket-server-gr7g.onrender.com');
 
-        // 註冊為管理員
         wsAgent.addEventListener('open', () => {
-            wsAgent.send(JSON.stringify({ type: 'register', role: 'agent' }));
-            console.log("客服端已註冊為 agent");
+            const token = localStorage.getItem('token');
+            wsAgent.send(JSON.stringify({ type: 'login', token }));
         });
 
-        // 收到使用者訊息
         wsAgent.addEventListener('message', (event) => {
             const data = JSON.parse(event.data);
-            console.log("客服端收到訊息", data);
+            if (data.type === 'system') console.log(data.msg);
             if (data.type === 'msg') {
                 const div = document.createElement('div');
                 div.classList.add('message', 'user');
@@ -109,26 +98,20 @@
             if (!msg) return;
 
             const div = document.createElement('div');
-            div.classList.add('message', 'ai');
+            div.classList.add('message', 'agent');
             div.textContent = msg;
             chatBoxAdmin.appendChild(div);
             chatBoxAdmin.scrollTop = chatBoxAdmin.scrollHeight;
 
-            wsAgent.send(JSON.stringify({ type: 'reply', msg })); // 若想指定使用者，加 targetID
+            wsAgent.send(JSON.stringify({ type: 'reply', msg }));
             adminReplyInput.value = '';
         }
 
-        // 按鈕事件
         sendAdminBtn.addEventListener('click', sendAdminMsg);
-        adminReplyInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendAdminMsg();
-            }
+        adminReplyInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminMsg(); }
         });
-
     </script>
-
 </body>
 
 </html>

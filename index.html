@@ -361,7 +361,7 @@
 
         // ----------------- 使用者 WebSocket -----------------
 
-        const ws = new WebSocket('ws://localhost:8082');
+        const ws = new WebSocket('wss://websocket-server-gr7g.onrender.com');
         ws.addEventListener('open', () => {
             ws.send(JSON.stringify({ type: 'register', role: 'user' }));
             console.log("使用者端已註冊為 user");
